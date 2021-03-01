@@ -163,14 +163,7 @@ open_failure_message(const char *filename, int err, gboolean for_writing) {
 }
 
 static void
-read_failure_message(const char *filename, int err) {
-    fprintf(stderr, "marine: ");
-    fprintf(stderr, "An error occured while reading from the file \"%s\": %s.", filename, g_strerror(err));
-    fprintf(stderr, "\n");    
-}
-
-static void
-write_failure_message(const char *filename, int err) {
+read_write_failure_message(const char *filename, int err) {
     fprintf(stderr, "marine: ");
     fprintf(stderr, "An error occured while reading from the file \"%s\": %s.", filename, g_strerror(err));
     fprintf(stderr, "\n");    
@@ -850,7 +843,8 @@ int _init_marine(void) {
     setlocale(LC_ALL, "");
     
     init_report_message(failure_warning_message, failure_warning_message, 
-                        open_failure_message, read_failure_message, write_failure_message);
+                        open_failure_message, read_write_failure_message, 
+                        read_write_failure_message);
 
     /*
      * Get credential information for later use, and drop privileges
