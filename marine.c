@@ -148,6 +148,26 @@ static int *packet_filter_keys[4096];
 static gboolean prefs_loaded = FALSE;
 static gboolean can_init_marine = TRUE;
 
+static void
+failure_warning_message(const char *msg_format, va_list ap) {
+    fprintf(stderr, "marine: ");
+    vfprintf(stderr, msg_format, ap);
+    fprintf(stderr, "\n");
+}
+
+static void
+open_failure_message(const char *filename, int err, gboolean for_writing) {
+    fprintf(stderr, "marine: ");
+    fprintf(stderr, file_open_error_message(err, for_writing), filename);
+    fprintf(stderr, "\n");    
+}
+
+static void
+read_write_failure_message(const char *filename, int err) {
+    fprintf(stderr, "marine: ");
+    fprintf(stderr, "An error occured while reading from the file \"%s\": %s.", filename, g_strerror(err));
+    fprintf(stderr, "\n");    
+}
 
 static void reset_epan_mem(capture_file *cf, epan_dissect_t *edt, gboolean tree, gboolean visual);
 
@@ -317,7 +337,7 @@ marine_write_specified_fields(packet_filter *filter, epan_dissect_t *edt, char *
                 }
             }
 
-            output[counter++][field_counter] = '\0';
+            output[counter][field_counter] = '\0';
 
             if (filter->macro_ids != NULL) {
                 int *key = g_new(gint, 1);
@@ -325,6 +345,7 @@ marine_write_specified_fields(packet_filter *filter, epan_dissect_t *edt, char *
                 g_hash_table_add(used_macros, key);
             }
         }
+        counter++;
     }
 
     /* get ready for the next packet
@@ -588,7 +609,7 @@ int parse_output_fields(output_fields_t *output_fields, char **fields, unsigned 
             total_size += strlen((gchar *) it->data) + 1;
         }
 
-        *err_msg = (char *)g_malloc0(total_size);
+        *err_msg = (char *)g_malloc0(total_size + 1);
         for (it = invalid_fields; it != NULL; it = g_slist_next(it)) {
             strcat(*err_msg, (gchar *) it->data);
             strcat(*err_msg, "\t");
@@ -820,6 +841,10 @@ int _init_marine(void) {
 
     /* Set the C-language locale to the native environment. */
     setlocale(LC_ALL, "");
+    
+    init_report_message(failure_warning_message, failure_warning_message, 
+                        open_failure_message, read_write_failure_message, 
+                        read_write_failure_message);
 
     /*
      * Get credential information for later use, and drop privileges
